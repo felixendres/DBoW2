@@ -23,7 +23,8 @@
 #include "BowVector.h"
 #include "ScoringObject.h"
 
-#include <DUtils/DUtils.h>
+#include <chrono>
+#include <random>
 
 using namespace std;
 
@@ -823,8 +824,8 @@ void TemplatedVocabulary<TDescriptor,F>::initiateClustersKMpp(
   // 4. Repeat Steps 2 and 3 until k centers have been chosen.
   // 5. Now that the initial centers have been chosen, proceed using standard k-means 
   //    clustering.
-
-  DUtils::Random::SeedRandOnce();
+  static unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  static std::default_random_engine generator (seed);
 
   clusters.resize(0);
   clusters.reserve(m_k);
@@ -832,7 +833,8 @@ void TemplatedVocabulary<TDescriptor,F>::initiateClustersKMpp(
   
   // 1.
   
-  int ifeature = DUtils::Random::RandomInt(0, pfeatures.size()-1);
+  std::uniform_int_distribution<int> randomInt(0, pfeatures.size()-1);
+  int ifeature = randomInt(generator);
   
   // create first cluster
   clusters.push_back(*pfeatures[ifeature]);
@@ -861,13 +863,14 @@ void TemplatedVocabulary<TDescriptor,F>::initiateClustersKMpp(
     
     // 3.
     double dist_sum = std::accumulate(min_dists.begin(), min_dists.end(), 0.0);
+    std::uniform_real_distribution<float> randomFloat(0, dist_sum);
 
     if(dist_sum > 0)
     {
       double cut_d;
       do
       {
-        cut_d = DUtils::Random::RandomValue<double>(0, dist_sum);
+        cut_d = randomFloat(generator);
       } while(cut_d == 0.0);
 
       double d_up_now = 0;
